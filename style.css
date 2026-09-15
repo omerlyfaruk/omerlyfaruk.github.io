@@ -270,3 +270,29 @@ dialog.recipe::backdrop{background:rgba(10,20,16,.55)}
 .note{font-size:12px;color:var(--muted)}
 @media (max-width:620px){.rd-cols{grid-template-columns:1fr}.rd-stats{grid-template-columns:1fr 1fr}.meal{grid-template-columns:64px 1fr auto}}
 @media print{header.top,.filters,.gen,.prog-actions,footer,.cta,.hero,.facts,#araclar,#nasil,#ucretsiz,#gizlilik,#sss,#planlar,.weeks{display:none!important}.day{break-inside:avoid}body{background:#fff}}
+
+/* recipe art */
+.rart{display:block;aspect-ratio:16/10;max-width:100%;overflow:hidden;background:var(--surface-2)}
+.rart svg,.rart img,.rd-art svg,.rd-art img,.mthumb svg,.mthumb img{display:block;width:100%;height:100%;object-fit:cover}
+.rd-art{margin:-26px -26px 0;aspect-ratio:16/7;overflow:hidden;border-radius:20px 20px 0 0}
+.meal{grid-template-columns:70px 44px 1fr auto}
+.mthumb{width:44px;height:44px;border-radius:10px;overflow:hidden;align-self:center}
+@media (max-width:620px){.meal{grid-template-columns:58px 40px 1fr auto}.mthumb{width:40px;height:40px}}
+
+/* v3: goal, week colors, pdf */
+:root{--wkmix:62%}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--wkmix:12%}}
+:root[data-theme="dark"]{--wkmix:12%}
+.plate-foot{grid-template-columns:repeat(3,1fr)}
+.seg3{grid-template-columns:repeat(3,1fr)}
+.seg3 button{font-size:14px;padding:9px 4px}
+.goalbox #goalFields{margin-top:10px}
+.pace{font-size:13px;line-height:1.45;opacity:.85;margin-top:8px}
+.pace b{font-family:var(--mono);font-weight:700}
+.pace .warn{display:block;margin-top:6px;color:var(--turmeric);font-weight:600}
+.day{background:color-mix(in srgb,var(--wk,var(--surface)) var(--wkmix),var(--surface))}
+.weeks button{background:color-mix(in srgb,var(--wk,var(--surface)) var(--wkmix),var(--surface))}
+.weeks button[aria-selected="true"]{box-shadow:0 0 0 2px var(--ink) inset;background:color-mix(in srgb,var(--wk,var(--surface)) var(--wkmix),var(--surface));color:var(--ink)}
+.rd-stats{grid-template-columns:repeat(5,1fr)}
+.rmac .sug{color:var(--beet)}
+@media (max-width:620px){.rd-stats{grid-template-columns:repeat(3,1fr)}}

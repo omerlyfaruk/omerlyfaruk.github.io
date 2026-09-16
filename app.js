@@ -15,10 +15,10 @@
 
   function setSex(s){
     sex=s;
-    document.querySelectorAll('.seg button').forEach(function(x){x.setAttribute('aria-pressed', x.dataset.sex===s);});
+    document.querySelectorAll('[data-sex]').forEach(function(x){x.setAttribute('aria-pressed', x.dataset.sex===s);});
     $('hipLbl').hidden = s==='m';
   }
-  document.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){setSex(b.dataset.sex);calc();});});
+  document.querySelectorAll('[data-sex]').forEach(function(b){b.addEventListener('click',function(){setSex(b.dataset.sex);calc();});});
   setSex(sex);
   function setGoal(g){
     goalMode=g;

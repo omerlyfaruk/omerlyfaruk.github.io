@@ -381,3 +381,51 @@ dialog.recipe::backdrop{background:rgba(10,20,16,.55)}
 .rp ul,.rp ol{margin:0;padding-left:20px;display:grid;gap:6px}
 a.rcard{text-decoration:none}
 @media print{.recipe-page .related,.crumbs,.rd-tools{display:none!important}.rp{border:0}}
+
+/* ---------- v6: sade görünüm ---------- */
+.simple .hero{padding-block:48px 24px;gap:40px}
+.simple .hero h1{font-size:clamp(36px,5vw,58px)}
+.simple .hero p.lede{font-size:18px;margin:16px 0 22px}
+.simple .hero h1 em::after{display:none}
+.plate-goal{font-size:14px;color:var(--muted)}
+.plate{box-shadow:0 18px 40px -28px rgba(19,35,29,.35)}
+.simple section.block{padding-block:56px 0}
+.simple .sec-head{margin-bottom:20px}
+.simple .sec-head h2{font-size:clamp(26px,3.2vw,36px)}
+.profile{padding:20px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.simple .tools{gap:12px}
+.simple .tool{padding:18px;gap:10px}
+.simple .tool h3{font-size:16px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.simple .tool h3 .sub{font-family:var(--body);font-weight:500}
+.simple .result .num{font-size:32px}
+.simple .glasses i{width:10px;height:14px}
+.simple .gen{padding:18px;gap:12px}
+.simple .gen .g-field{min-width:130px}
+.prefs{flex-basis:100%;border-top:1px solid var(--line);padding-top:10px}
+.prefs summary,.more-filters summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink);list-style:none}
+.prefs summary::before,.more-filters summary::before{content:"+ ";color:var(--leaf);font-family:var(--mono)}
+.prefs[open] summary::before,.more-filters[open] summary::before{content:"− "}
+.prefs summary::-webkit-details-marker,.more-filters summary::-webkit-details-marker{display:none}
+.prefs .dchips{margin:10px 0 6px}
+.simple .summary{border-top:0;padding-top:0;flex-basis:auto;align-self:center}
+.simple .day{padding:14px}
+.simple .meal{grid-template-columns:74px 1fr auto}
+.simple .faq summary{font-size:16px;padding:14px 0}
+.simple footer{margin-top:48px}
+.simple .legal a{color:var(--leaf)}
+.page-hero h1{margin-top:0}
+.simple .page-hero{padding-block:36px 8px}
+.simple .page-hero h1{font-size:clamp(32px,4vw,44px)}
+.simple .page-hero p{font-size:16px;margin:6px 0 0}
+.simple .filters{gap:8px;padding-block:12px}
+.simple .filters input[type=search]{flex-basis:100%}
+.more-filters{flex-basis:100%}
+.mf-body{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.rcard.plain .rbody{padding:14px;gap:6px}
+.rcard.plain h3{font-size:16px}
+.rcard.plain .rkcal{padding-top:4px}
+.rcard.plain .rkcal .num{font-size:20px}
+.simple .rgrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rp{padding:26px}
+@media (max-width:560px){.row3{grid-template-columns:1fr 1fr 1fr}.simple .gen .g-field{min-width:calc(50% - 6px)}}

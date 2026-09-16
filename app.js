@@ -1,6 +1,7 @@
 (function(){
   var F=window.FitKal, R=window.FITKAL_RECIPES||[], fmt=F.fmt;
-  var $=function(id){return document.getElementById(id);};
+  var DUMMY=document.createElement('div');
+  var $=function(id){return document.getElementById(id)||DUMMY;};
   var sex='f';
   var state={};
   var goalMode='keep';
@@ -11,7 +12,7 @@
   // restore saved profile
   try{
     var saved=JSON.parse(localStorage.getItem('fitkal-profile')||'null');
-    if(saved){ FIELDS.forEach(function(k){ if(saved[k]!=null&&$(k)) $(k).value=saved[k]; }); if(saved.sex) sex=saved.sex; if(saved.goalMode) goalMode=saved.goalMode; if(saved.diets) dietKeys=saved.diets; if(saved.useBf) useBf=true; }
+    if(saved){ FIELDS.forEach(function(k){ if(saved[k]!=null&&$(k)) $(k).value=saved[k]; }); if(saved.sex) sex=saved.sex; if(saved.goalMode) goalMode=saved.goalMode; if(saved.diets) dietKeys=saved.diets; }
   }catch(e){}
 
   function setSex(s){
@@ -103,11 +104,9 @@
     var ex=Math.max(num('exMin')||0,0), L=(w*33+ex/30*350)/1000;
     $('water').textContent=fmt(L,1); $('pW').textContent=fmt(L,1)+' L';
     var gl=L/0.2, full=Math.floor(gl);
-    $('glasses').innerHTML='<i></i>'.repeat(Math.min(full,40))+(gl-full>=0.5?'<i class="half"></i>':'');
+    $('glasses').innerHTML='<i></i>'.repeat(Math.min(Math.round(gl),40));
     $('glassTxt').textContent='Yaklaşık '+fmt(Math.round(gl))+' su bardağı (200 ml)';
     waterGoal=Math.round(gl); drawWater();
-    var met=parseFloat($('exAct').value), dur=Math.max(num('exDur')||0,0), exK=met*3.5*w/200*dur;
-    $('exKcal').textContent=fmt(exK); $('exNote').textContent=$('exAct').options[$('exAct').selectedIndex].text+' · '+fmt(dur)+' dk · MET '+fmt(met,1);
 
     var lo=18.5*m*m, hi=24.9*m*m, inch=Math.max(h/2.54-60,0);
     $('ideal').textContent=fmt(lo)+'–'+fmt(hi);
@@ -124,7 +123,7 @@
     $('kcalChoice').options[0].textContent='Analizime göre ('+fmt(kcal)+' kcal)';
     $('sKcal').textContent=fmt(progKcal);
     state={kcal:kcal,progKcal:progKcal,plan:plan,goal:kc==='auto'?kcal-tdee:progKcal-tdee,ratio:ratio,goalWeeks:gw,mode:goalMode,label:goalLabel,progLabel:kc==='auto'?goalLabel:''};
-    if($('wChart')) drawProgress();
+    if(document.getElementById('wChart')) drawProgress();
     try{ var o={sex:sex,goalMode:goalMode,diets:dietKeys,useBf:useBf}; FIELDS.forEach(function(k){o[k]=$(k).value;}); localStorage.setItem('fitkal-profile',JSON.stringify(o)); }catch(e){}
   }
 
@@ -252,17 +251,17 @@
     program.days.slice(curWeek*7,curWeek*7+7).forEach(function(day){
       var t=dayStats(day), rows='';
       day.meals.forEach(function(m,mi){
-        rows+='<div class="meal"><span class="slot">'+m.slot+'<button type="button" class="swap" data-d="'+day.i+'" data-m="'+mi+'" title="Bu öğünü değiştir" aria-label="'+m.slot+' öğününü değiştir">↻</button></span><span class="mthumb">'+window.FitKalArt.svg(m.r)+'</span><span><a href="tarifler.html#'+m.r.id+'">'+m.r.title+'</a><span class="por">'+porsiyonTxt(m.mu)+' · porsiyon '+fmt(m.r.kcal)+' kcal'+(m.r.sugar>0?' · şeker '+fmt(m.r.sugar*m.mu)+' g':'')+'</span></span><span class="k">'+fmt(m.r.kcal*m.mu)+'</span></div>';
+        rows+='<div class="meal"><span class="slot">'+m.slot+'<button type="button" class="swap" data-d="'+day.i+'" data-m="'+mi+'" title="Bu öğünü değiştir" aria-label="'+m.slot+' öğününü değiştir">↻</button></span><span><a href="tarifler.html#'+m.r.id+'">'+m.r.title+'</a><span class="por">'+porsiyonTxt(m.mu)+' · porsiyon '+fmt(m.r.kcal)+' kcal'+(m.r.sugar>0?' · şeker '+fmt(m.r.sugar*m.mu)+' g':'')+'</span></span><span class="k">'+fmt(m.r.kcal*m.mu)+'</span></div>';
       });
       var diffPct=Math.round((t.k-program.kcal)/program.kcal*100);
       html+='<article class="day" style="--wk:'+wkColor(curWeek)+'"><div class="day-head"><h3>'+(program.weeks>1?(curWeek+1)+'. hafta · ':'')+DAYNAMES[day.i%7]+'</h3><span>'+fmt(t.k)+' / '+fmt(program.kcal)+' kcal</span></div>'+rows+
         '<div class="day-foot"><span>P <b>'+fmt(t.p)+' g</b></span><span>K <b>'+fmt(t.c)+' g</b></span><span>Y <b>'+fmt(t.f)+' g</b></span><span>Şeker <b>'+fmt(t.s)+' g</b></span><span>Hedeften <b>'+(diffPct>0?'+':'')+diffPct+'%</b></span></div></article>';
     });
     var label=program.weeks===1?'Haftalık':program.weeks===4?'Aylık':program.weeks+' haftalık';
-    html+='</div><div class="prog-actions"><button class="btn btn-primary" type="button" id="pdfBtn">'+label+' programı PDF indir</button><button class="btn btn-ghost" type="button" id="groBtn" aria-expanded="'+showGrocery+'">'+(showGrocery?'Alışveriş listesini gizle':(program.weeks>1?(curWeek+1)+'. hafta ':'')+'Alışveriş listesi')+'</button><button class="btn btn-ghost" type="button" id="regen">Yeniden oluştur</button><a class="btn btn-ghost" href="tarifler.html">Tüm tarifler</a></div>'+
+    html+='</div><div class="prog-actions"><button class="btn btn-primary" type="button" id="pdfBtn">'+label+' programı PDF indir</button><button class="btn btn-ghost" type="button" id="groBtn" aria-expanded="'+showGrocery+'">'+(showGrocery?'Alışveriş listesini gizle':(program.weeks>1?(curWeek+1)+'. hafta ':'')+'Alışveriş listesi')+'</button><button class="btn btn-ghost" type="button" id="regen">Yeniden oluştur</button></div>'+
       (program.missing?'<p class="note warn-note">Seçtiğin beslenme tercihlerine uyan tarif bulunamadığı için '+program.missing+' öğün boş bırakıldı. Tercihleri azaltmayı ya da öğün düzenini değiştirmeyi dene.</p>':'')+
       (showGrocery?groceryHtml():'')+
-      '<p class="note" style="margin-top:12px">PDF, programın tamamını ('+program.weeks+' hafta) içerir. Kaloriler porsiyon başına yaklaşık değerlerdir; porsiyonlar günlük hedefe yaklaşmak için ayarlanmıştır.</p>';
+      '<p class="note" style="margin-top:10px">↻ ile beğenmediğin öğünü değiştirebilirsin. Değerler yaklaşıktır.</p>';
     out.innerHTML=html;
     out.querySelectorAll('.weeks button').forEach(function(b){b.addEventListener('click',function(){curWeek=+b.dataset.w;render();});});
     out.querySelectorAll('.swap').forEach(function(b){b.addEventListener('click',function(){ swapMeal(+b.dataset.d,+b.dataset.m); });});

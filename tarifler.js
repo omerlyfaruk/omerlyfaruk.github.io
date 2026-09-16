@@ -12,7 +12,7 @@
   $('fPlan').value=st.plan;
 
   document.querySelectorAll('#cats button').forEach(function(b){
-    var k=b.dataset.kat; if(k) b.querySelector('small').textContent=R.filter(function(r){return r.category===k;}).length;
+    var k=b.dataset.kat;
     b.addEventListener('click',function(){st.kat=k;draw();});
   });
   $('fDiets').innerHTML=Object.keys(F.DIETS).map(function(k){ return '<label class="dchip"><input type="checkbox" data-diet="'+k+'"><span>'+F.DIETS[k].name+'</span></label>'; }).join('');
@@ -40,12 +40,11 @@
   }
 
   function card(r){
-    return '<button type="button" class="rcard" data-id="'+r.id+'"><span class="rart">'+window.FitKalArt.svg(r)+'</span><span class="rband '+r.category+'"></span><span class="rbody">'+
-      '<span class="rmeta"><span>'+F.CATS[r.category]+'</span><span>'+r.time+' dk</span></span>'+
-      '<h3>'+esc(r.title)+'</h3><p>'+esc(r.desc)+'</p>'+
-      '<span class="badges">'+(r.fit?'<span class="badge fit">Fit</span>':'')+(r.sugar<=5?'<span class="badge">Düşük şeker</span>':'')+r._plans.map(function(p){return '<span class="badge">'+F.PLANS[p].name+'</span>';}).join('')+'</span>'+
-      '<span class="rkcal"><span class="num">'+fmt(r.kcal)+'</span><small>kcal / porsiyon</small></span>'+
-      '<span class="rmac"><span>P '+r.protein+' g</span><span>K '+r.carbs+' g</span><span>Y '+r.fat+' g</span>'+(r.sugar>0?'<span class="sug">Şeker '+r.sugar+' g</span>':'')+'</span>'+
+    return '<button type="button" class="rcard plain" data-id="'+r.id+'"><span class="rbody">'+
+      '<span class="rmeta"><span>'+F.CATS[r.category]+(r.fit?' · Fit':'')+'</span><span>'+r.time+' dk</span></span>'+
+      '<h3>'+esc(r.title)+'</h3>'+
+      '<span class="rkcal"><span class="num">'+fmt(r.kcal)+'</span><small>kcal</small></span>'+
+      '<span class="rmac"><span>P '+r.protein+'</span><span>K '+r.carbs+'</span><span>Y '+r.fat+'</span><span>Ş '+r.sugar+'</span></span>'+
       '</span></button>';
   }
 
@@ -55,19 +54,18 @@
   function openRecipe(id){
     var r=byId[id]; if(!r) return;
     cur=r; curServ=r.servings;
-    var sh=F.shares(r), diets=F.dietsFor(r);
+    var diets=F.dietsFor(r);
     $('dBody').innerHTML=
-      '<div class="rd-art">'+window.FitKalArt.svg(r)+'</div><div class="rd-top"><div><div class="eyebrow">'+F.CATS[r.category]+(r.fit?' · Fit':'')+'</div><h2 id="dTitle" style="margin-top:6px">'+esc(r.title)+'</h2><p style="margin:8px 0 0;color:var(--muted)">'+esc(r.desc)+'</p></div>'+
+      '<div class="rd-top"><div><div class="eyebrow">'+F.CATS[r.category]+(r.fit?' · Fit':'')+'</div><h2 id="dTitle" style="margin-top:6px">'+esc(r.title)+'</h2><p style="margin:8px 0 0;color:var(--muted)">'+esc(r.desc)+'</p></div>'+
       '<button class="icon-btn close" type="button" id="dClose" aria-label="Kapat"><svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
       '<div class="rd-stats"><div><span>Porsiyon kalorisi</span><strong>'+fmt(r.kcal)+' kcal</strong></div><div><span>Protein</span><strong>'+r.protein+' g</strong></div><div><span>Karbonhidrat</span><strong>'+r.carbs+' g</strong></div><div><span>Yağ</span><strong>'+r.fat+' g</strong></div><div><span>Şeker</span><strong>'+r.sugar+' g</strong></div></div>'+
-      '<div class="macro-bar" style="margin:0"><i style="width:'+Math.round(sh.p*100)+'%;background:var(--beet)"></i><i style="width:'+Math.round(sh.c*100)+'%;background:var(--turmeric)"></i><i style="width:'+Math.round(sh.f*100)+'%;background:var(--sky)"></i></div>'+
       '<div class="note">'+r.time+' dk · '+r.difficulty+(r._plans.length?' · Uygun planlar: '+r._plans.map(function(p){return F.PLANS[p].name;}).join(', '):'')+'</div>'+
-      (diets.length?'<div class="badges">'+diets.map(function(k){return '<span class="badge fit">'+F.DIETS[k].name+'</span>';}).join('')+'</div>':'')+
+      (diets.length?'<div class="note">'+diets.map(function(k){return F.DIETS[k].name;}).join(' · ')+'</div>':'')+
       '<div class="rd-tools"><div class="stepper" role="group" aria-label="Porsiyon sayısı"><button type="button" class="icon-btn sm" id="sMinus" aria-label="Porsiyonu azalt">−</button><span><b id="sN">'+curServ+'</b> porsiyon · <b id="sK">'+fmt(r.kcal*curServ)+'</b> kcal</span><button type="button" class="icon-btn sm" id="sPlus" aria-label="Porsiyonu artır">+</button></div>'+
-      '<div class="rd-acts"><a class="btn btn-ghost btn-sm" href="tarif/'+F.slug(r.title)+'.html">Tarif sayfası</a><button type="button" class="btn btn-ghost btn-sm" id="dCopy">Bağlantıyı kopyala</button><button type="button" class="btn btn-ghost btn-sm" id="dPrint">Yazdır</button></div></div>'+
+      '<div class="rd-acts"><button type="button" class="btn btn-ghost btn-sm" id="dCopy">Bağlantıyı kopyala</button><button type="button" class="btn btn-ghost btn-sm" id="dPrint">Yazdır</button></div></div>'+
       '<div class="rd-cols"><div><h4>Malzemeler</h4><ul id="dIng">'+ingHtml(r,curServ)+'</ul></div>'+
       '<div><h4>Hazırlanışı</h4><ol>'+r.steps.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div></div>'+
-      '<p class="note">Kalori ve besin değerleri porsiyon başına yaklaşıktır. Diyet etiketleri malzeme listesinden otomatik belirlenir; alerjin varsa kullandığın ürünlerin etiketini mutlaka kontrol et.</p>';
+      '<p class="note">Değerler porsiyon başına yaklaşıktır. Alerjin varsa ürün etiketlerini kontrol et.</p>';
     $('dClose').addEventListener('click',closeRecipe);
     function setServ(n){ curServ=Math.max(1,Math.min(20,n)); $('sN').textContent=curServ; $('sK').textContent=fmt(r.kcal*curServ); $('dIng').innerHTML=ingHtml(r,curServ); }
     $('sMinus').addEventListener('click',function(){setServ(curServ-1);});

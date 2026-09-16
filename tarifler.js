@@ -4,7 +4,7 @@
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
   var norm=function(s){return String(s).toLocaleLowerCase('tr-TR');};
   var byId={}; R.forEach(function(r){byId[r.id]=r; r._plans=F.plansFor(r);});
-  var st={kat:'',plan:'',fit:false,q:'',sort:''};
+  var st={kat:'',plan:'',fit:false,q:'',sort:'',diets:[]};
 
   var qs=new URLSearchParams(location.search);
   if(qs.get('kat')) st.kat=qs.get('kat');
@@ -15,6 +15,8 @@
     var k=b.dataset.kat; if(k) b.querySelector('small').textContent=R.filter(function(r){return r.category===k;}).length;
     b.addEventListener('click',function(){st.kat=k;draw();});
   });
+  $('fDiets').innerHTML=Object.keys(F.DIETS).map(function(k){ return '<label class="dchip"><input type="checkbox" data-diet="'+k+'"><span>'+F.DIETS[k].name+'</span></label>'; }).join('');
+  $('fDiets').querySelectorAll('input').forEach(function(i){ i.addEventListener('change',function(){ st.diets=[].slice.call($('fDiets').querySelectorAll('input:checked')).map(function(x){return x.dataset.diet;}); draw(); }); });
   $('fPlan').addEventListener('change',function(){st.plan=this.value;draw();});
   $('fSort').addEventListener('change',function(){st.sort=this.value;draw();});
   $('fFit').addEventListener('change',function(){st.fit=this.checked;draw();});
@@ -26,12 +28,13 @@
       if(st.kat&&r.category!==st.kat) return false;
       if(st.plan&&r._plans.indexOf(st.plan)<0) return false;
       if(st.fit&&!r.fit) return false;
+      if(st.diets.length&&!F.dietOk(r,st.diets)) return false;
       if(st.q&&norm(r.title+' '+r.desc+' '+r.tags.join(' ')+' '+r.ingredients.join(' ')).indexOf(st.q)<0) return false;
       return true;
     });
     var s={ 'kcal-asc':function(a,b){return a.kcal-b.kcal;}, 'kcal-desc':function(a,b){return b.kcal-a.kcal;}, protein:function(a,b){return b.protein-a.protein;}, time:function(a,b){return a.time-b.time;}, sugar:function(a,b){return a.sugar-b.sugar;} }[st.sort];
     if(s) list=list.slice().sort(s);
-    $('count').textContent=list.length+' tarif'+(st.plan?' · '+F.PLANS[st.plan].name+' plana uygun':'');
+    $('count').textContent=list.length+' tarif'+(st.plan?' · '+F.PLANS[st.plan].name+' plana uygun':'')+(st.diets.length?' · '+st.diets.map(function(k){return F.DIETS[k].name;}).join(', '):'');
     $('grid').innerHTML=list.length?list.map(card).join(''):'<div class="empty">Bu filtrelere uyan tarif yok. Filtreleri gevşetmeyi dene.</div>';
     $('grid').querySelectorAll('.rcard').forEach(function(c){c.addEventListener('click',function(){location.hash=c.dataset.id;});});
   }
@@ -47,18 +50,34 @@
   }
 
   var dlg=$('dlg');
+  var cur=null, curServ=1;
+  function ingHtml(r,n){ var f=n/r.servings; return r.ingredients.map(function(x){return '<li>'+esc(F.scaleIng(x,f))+'</li>';}).join(''); }
   function openRecipe(id){
     var r=byId[id]; if(!r) return;
-    var sh=F.shares(r);
+    cur=r; curServ=r.servings;
+    var sh=F.shares(r), diets=F.dietsFor(r);
     $('dBody').innerHTML=
       '<div class="rd-art">'+window.FitKalArt.svg(r)+'</div><div class="rd-top"><div><div class="eyebrow">'+F.CATS[r.category]+(r.fit?' · Fit':'')+'</div><h2 id="dTitle" style="margin-top:6px">'+esc(r.title)+'</h2><p style="margin:8px 0 0;color:var(--muted)">'+esc(r.desc)+'</p></div>'+
       '<button class="icon-btn close" type="button" id="dClose" aria-label="Kapat"><svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>'+
       '<div class="rd-stats"><div><span>Porsiyon kalorisi</span><strong>'+fmt(r.kcal)+' kcal</strong></div><div><span>Protein</span><strong>'+r.protein+' g</strong></div><div><span>Karbonhidrat</span><strong>'+r.carbs+' g</strong></div><div><span>Yağ</span><strong>'+r.fat+' g</strong></div><div><span>Şeker</span><strong>'+r.sugar+' g</strong></div></div>'+
       '<div class="macro-bar" style="margin:0"><i style="width:'+Math.round(sh.p*100)+'%;background:var(--beet)"></i><i style="width:'+Math.round(sh.c*100)+'%;background:var(--turmeric)"></i><i style="width:'+Math.round(sh.f*100)+'%;background:var(--sky)"></i></div>'+
-      '<div class="note">'+r.servings+' porsiyon · '+r.time+' dk · '+r.difficulty+' · Toplam tarif ≈ '+fmt(r.kcal*r.servings)+' kcal'+(r._plans.length?' · Uygun planlar: '+r._plans.map(function(p){return F.PLANS[p].name;}).join(', '):'')+'</div>'+
-      '<div class="rd-cols"><div><h4>Malzemeler</h4><ul>'+r.ingredients.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>'+
-      '<div><h4>Hazırlanışı</h4><ol>'+r.steps.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div></div>';
+      '<div class="note">'+r.time+' dk · '+r.difficulty+(r._plans.length?' · Uygun planlar: '+r._plans.map(function(p){return F.PLANS[p].name;}).join(', '):'')+'</div>'+
+      (diets.length?'<div class="badges">'+diets.map(function(k){return '<span class="badge fit">'+F.DIETS[k].name+'</span>';}).join('')+'</div>':'')+
+      '<div class="rd-tools"><div class="stepper" role="group" aria-label="Porsiyon sayısı"><button type="button" class="icon-btn sm" id="sMinus" aria-label="Porsiyonu azalt">−</button><span><b id="sN">'+curServ+'</b> porsiyon · <b id="sK">'+fmt(r.kcal*curServ)+'</b> kcal</span><button type="button" class="icon-btn sm" id="sPlus" aria-label="Porsiyonu artır">+</button></div>'+
+      '<div class="rd-acts"><a class="btn btn-ghost btn-sm" href="tarif/'+F.slug(r.title)+'.html">Tarif sayfası</a><button type="button" class="btn btn-ghost btn-sm" id="dCopy">Bağlantıyı kopyala</button><button type="button" class="btn btn-ghost btn-sm" id="dPrint">Yazdır</button></div></div>'+
+      '<div class="rd-cols"><div><h4>Malzemeler</h4><ul id="dIng">'+ingHtml(r,curServ)+'</ul></div>'+
+      '<div><h4>Hazırlanışı</h4><ol>'+r.steps.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div></div>'+
+      '<p class="note">Kalori ve besin değerleri porsiyon başına yaklaşıktır. Diyet etiketleri malzeme listesinden otomatik belirlenir; alerjin varsa kullandığın ürünlerin etiketini mutlaka kontrol et.</p>';
     $('dClose').addEventListener('click',closeRecipe);
+    function setServ(n){ curServ=Math.max(1,Math.min(20,n)); $('sN').textContent=curServ; $('sK').textContent=fmt(r.kcal*curServ); $('dIng').innerHTML=ingHtml(r,curServ); }
+    $('sMinus').addEventListener('click',function(){setServ(curServ-1);});
+    $('sPlus').addEventListener('click',function(){setServ(curServ+1);});
+    $('dPrint').addEventListener('click',function(){ document.body.classList.add('printing-recipe'); window.print(); setTimeout(function(){document.body.classList.remove('printing-recipe');},500); });
+    $('dCopy').addEventListener('click',function(){
+      var url=location.href.replace(/[#?].*$/,'').replace(/tarifler\.html$/,'')+'tarif/'+F.slug(r.title)+'.html', b=this;
+      var ok=function(){ b.textContent='Kopyalandı'; setTimeout(function(){b.textContent='Bağlantıyı kopyala';},1800); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok,ok); else ok();
+    });
     if(!dlg.open) dlg.showModal();
   }
   function closeRecipe(){ if(dlg.open) dlg.close(); if(location.hash) history.replaceState(null,'',location.pathname+location.search); }

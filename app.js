@@ -5,12 +5,13 @@
   var state={};
   var goalMode='keep';
   var MODE_TXT={lose:'Kilo verme',keep:'Kilo koruma',gain:'Kilo alma'};
-  var FIELDS=['age','height','weight','activity','targetW','goalWeeks','plan','exMin','neck','waist','hip','duration','mainMeals','snacks','dessert','kcalChoice'];
+  var FIELDS=['age','height','weight','activity','targetW','goalWeeks','plan','exMin','neck','waist','hip','duration','mainMeals','snacks','dessert','kcalChoice','exAct','exDur'];
+  var dietKeys=[], useBf=false;
 
   // restore saved profile
   try{
     var saved=JSON.parse(localStorage.getItem('fitkal-profile')||'null');
-    if(saved){ FIELDS.forEach(function(k){ if(saved[k]!=null&&$(k)) $(k).value=saved[k]; }); if(saved.sex) sex=saved.sex; if(saved.goalMode) goalMode=saved.goalMode; }
+    if(saved){ FIELDS.forEach(function(k){ if(saved[k]!=null&&$(k)) $(k).value=saved[k]; }); if(saved.sex) sex=saved.sex; if(saved.goalMode) goalMode=saved.goalMode; if(saved.diets) dietKeys=saved.diets; if(saved.useBf) useBf=true; }
   }catch(e){}
 
   function setSex(s){
@@ -52,7 +53,23 @@
     for(var i=1;i<stops.length;i++){ if(b<=stops[i][0]){ pos=stops[i-1][1]+(b-stops[i-1][0])/(stops[i][0]-stops[i-1][0])*(stops[i][1]-stops[i-1][1]); break; } }
     $('bmiMark').style.left='calc('+pos+'% - 2px)';
 
-    var bmr=10*w+6.25*h-5*age+(sex==='m'?5:-161), tdee=bmr*act;
+    var neck=num('neck'),waist=num('waist'),hip=num('hip'),bf=NaN;
+    if(sex==='m'&&waist>neck) bf=495/(1.0324-0.19077*Math.log10(waist-neck)+0.15456*Math.log10(h))-450;
+    if(sex==='f'&&waist+hip>neck) bf=495/(1.29579-0.35004*Math.log10(waist+hip-neck)+0.22100*Math.log10(h))-450;
+    if(isFinite(bf)&&bf>2&&bf<70){
+      $('fat').textContent=fmt(bf,1);
+      var t=sex==='m'?[6,18,25]:[14,25,32];
+      if(bf<t[0]) chip($('fatChip'),'Çok düşük','warn'); else if(bf<t[1]) chip($('fatChip'),'Fit','ok'); else if(bf<t[2]) chip($('fatChip'),'Ortalama','warn'); else chip($('fatChip'),'Yüksek','bad');
+    } else { $('fat').textContent='—'; chip($('fatChip'),'Ölçüleri kontrol et',''); }
+
+    var bfOk=isFinite(bf)&&bf>2&&bf<70;
+    $('useBf').checked=useBf; $('useBf').disabled=!bfOk;
+    var bmr, formula;
+    if(useBf&&bfOk){ bmr=370+21.6*w*(1-bf/100); formula='Katch–McArdle (yağ oranı %'+fmt(bf,1)+')'; }
+    else { bmr=10*w+6.25*h-5*age+(sex==='m'?5:-161); formula='Mifflin–St Jeor denklemi'+(useBf&&!bfOk?' · yağ oranı için ölçüleri gir':''); }
+    $('kcalSub').textContent=formula;
+    var tdee=bmr*act;
+
     var floor=sex==='m'?1500:1200, goal=0, pace='', tw=num('targetW'), gw=Math.max(1,Math.round(num('goalWeeks')||1)), perWeek=0, warn='';
     if(goalMode!=='keep'){
       perWeek=(tw-w)/gw;
@@ -79,6 +96,7 @@
     var ratio=F.PLANS[plan].ratio, P=kcal*ratio[0]/400, C=kcal*ratio[1]/400, Fa=kcal*ratio[2]/900;
     $('mP').textContent=fmt(P)+' g'; $('mC').textContent=fmt(C)+' g'; $('mF').textContent=fmt(Fa)+' g';
     $('pP').textContent=fmt(P)+' g'; $('pC').textContent=fmt(C)+' g'; $('pF').textContent=fmt(Fa)+' g';
+    $('mPkg').textContent=fmt(P/w,1)+' g/kg'; $('mFib').textContent=fmt(Math.round(kcal/1000*14))+' g';
     $('bP').style.width=ratio[0]+'%'; $('bC').style.width=ratio[1]+'%'; $('bF').style.width=ratio[2]+'%';
     $('planSub').textContent=F.PLANS[plan].name+' plan'; $('pPlan').textContent=F.PLANS[plan].name;
 
@@ -87,21 +105,15 @@
     var gl=L/0.2, full=Math.floor(gl);
     $('glasses').innerHTML='<i></i>'.repeat(Math.min(full,40))+(gl-full>=0.5?'<i class="half"></i>':'');
     $('glassTxt').textContent='Yaklaşık '+fmt(Math.round(gl))+' su bardağı (200 ml)';
+    waterGoal=Math.round(gl); drawWater();
+    var met=parseFloat($('exAct').value), dur=Math.max(num('exDur')||0,0), exK=met*3.5*w/200*dur;
+    $('exKcal').textContent=fmt(exK); $('exNote').textContent=$('exAct').options[$('exAct').selectedIndex].text+' · '+fmt(dur)+' dk · MET '+fmt(met,1);
 
     var lo=18.5*m*m, hi=24.9*m*m, inch=Math.max(h/2.54-60,0);
     $('ideal').textContent=fmt(lo)+'–'+fmt(hi);
     $('devine').textContent=fmt((sex==='m'?50:45.5)+2.3*inch,1)+' kg';
     $('robinson').textContent=fmt(sex==='m'?52+1.9*inch:49+1.7*inch,1)+' kg';
     $('diff').textContent= w<lo ? '+'+fmt(lo-w,1)+' kg' : w>hi ? '−'+fmt(w-hi,1)+' kg' : 'Aralıkta';
-
-    var neck=num('neck'),waist=num('waist'),hip=num('hip'),bf=NaN;
-    if(sex==='m'&&waist>neck) bf=495/(1.0324-0.19077*Math.log10(waist-neck)+0.15456*Math.log10(h))-450;
-    if(sex==='f'&&waist+hip>neck) bf=495/(1.29579-0.35004*Math.log10(waist+hip-neck)+0.22100*Math.log10(h))-450;
-    if(isFinite(bf)&&bf>2&&bf<70){
-      $('fat').textContent=fmt(bf,1);
-      var t=sex==='m'?[6,18,25]:[14,25,32];
-      if(bf<t[0]) chip($('fatChip'),'Çok düşük','warn'); else if(bf<t[1]) chip($('fatChip'),'Fit','ok'); else if(bf<t[2]) chip($('fatChip'),'Ortalama','warn'); else chip($('fatChip'),'Yüksek','bad');
-    } else { $('fat').textContent='—'; chip($('fatChip'),'Ölçüleri kontrol et',''); }
 
     $('plateWho').textContent=(sex==='m'?'Erkek':'Kadın')+' · '+fmt(age)+' yaş · '+fmt(h)+' cm · '+fmt(w,w%1?1:0)+' kg';
     $('sKcal').textContent=fmt(kcal); $('sPlan').textContent=F.PLANS[plan].name; $('sGoal').textContent=goalLabel;
@@ -112,10 +124,38 @@
     $('kcalChoice').options[0].textContent='Analizime göre ('+fmt(kcal)+' kcal)';
     $('sKcal').textContent=fmt(progKcal);
     state={kcal:kcal,progKcal:progKcal,plan:plan,goal:kc==='auto'?kcal-tdee:progKcal-tdee,ratio:ratio,goalWeeks:gw,mode:goalMode,label:goalLabel,progLabel:kc==='auto'?goalLabel:''};
-    try{ var o={sex:sex,goalMode:goalMode}; FIELDS.forEach(function(k){o[k]=$(k).value;}); localStorage.setItem('fitkal-profile',JSON.stringify(o)); }catch(e){}
+    if($('wChart')) drawProgress();
+    try{ var o={sex:sex,goalMode:goalMode,diets:dietKeys,useBf:useBf}; FIELDS.forEach(function(k){o[k]=$(k).value;}); localStorage.setItem('fitkal-profile',JSON.stringify(o)); }catch(e){}
   }
 
   FIELDS.forEach(function(id){ $(id).addEventListener('input',calc); $(id).addEventListener('change',calc); });
+  $('useBf').addEventListener('change',function(){ useBf=this.checked; calc(); });
+
+  // ---------- water tracker ----------
+  var waterGoal=10;
+  function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function getWater(){ try{ return parseInt(localStorage.getItem('fitkal-water-'+todayKey())||'0',10)||0; }catch(e){ return 0; } }
+  function setWater(n){ try{ localStorage.setItem('fitkal-water-'+todayKey(),String(Math.max(0,n))); }catch(e){} drawWater(); }
+  function drawWater(){
+    var n=getWater(); $('wCount').textContent=n+' / '+waterGoal;
+    $('glasses').querySelectorAll('i').forEach(function(g,i){ g.classList.toggle('drunk', i<n); });
+    $('wMsg').textContent = n>=waterGoal ? 'Bugünkü su hedefine ulaştın.' : 'Kalan: '+(waterGoal-n)+' bardak';
+  }
+  $('wPlus').addEventListener('click',function(){ setWater(getWater()+1); });
+  $('wMinus').addEventListener('click',function(){ setWater(getWater()-1); });
+
+  // ---------- diet preferences ----------
+  var dietBox=$('diets');
+  dietBox.innerHTML=Object.keys(F.DIETS).map(function(k){ return '<label class="dchip"><input type="checkbox" data-diet="'+k+'"'+(dietKeys.indexOf(k)>-1?' checked':'')+'><span>'+F.DIETS[k].name+'</span></label>'; }).join('');
+  dietBox.querySelectorAll('input').forEach(function(i){ i.addEventListener('change',function(){
+    dietKeys=[].slice.call(dietBox.querySelectorAll('input:checked')).map(function(x){return x.dataset.diet;});
+    calc(); dietCount();
+  });});
+  function dietCount(){
+    var n={}; R.forEach(function(r){ if(F.dietOk(r,dietKeys)) n[r.category]=(n[r.category]||0)+1; });
+    $('dietNote').textContent = dietKeys.length ? 'Uygun tarif: '+(n.kahvalti||0)+' kahvaltı · '+(n.ana||0)+' ana öğün · '+(n.ara||0)+' ara öğün · '+(n.tatli||0)+' tatlı' : 'Tercih seçmezsen tüm tarifler kullanılır.';
+  }
+  dietCount();
 
   // plan recipe counts
   var counts={}; R.forEach(function(r){F.plansFor(r).forEach(function(p){counts[p]=(counts[p]||0)+1;});});
@@ -144,7 +184,7 @@
   function pick(cat,target,plan,goal,lastUsed,dayIndex,exclude){
     var gap = cat==='ana'?4:3, best=null;
     R.forEach(function(r){
-      if(r.category!==cat||exclude.indexOf(r.id)>-1) return;
+      if(r.category!==cat||exclude.indexOf(r.id)>-1||!F.dietOk(r,dietKeys)) return;
       var mults = cat==='tatli'?[0.5,1]:MULTS;
       mults.forEach(function(mu){
         var k=r.kcal*mu, score=Math.abs(k-target)/target;
@@ -160,11 +200,11 @@
     return best;
   }
 
-  var program=null, curWeek=0;
+  var program=null, curWeek=0, showGrocery=false;
   function generate(){
     calc();
     var dv=$('duration').value, weeks=dv==='goal'?(goalMode==='keep'?4:Math.min(state.goalWeeks,12)):parseInt(dv,10), layout=buildLayout($('mainMeals').value,$('snacks').value), dd=DESSERT_DAYS[$('dessert').value];
-    var lastUsed={}, days=[];
+    var lastUsed={}, days=[], missing=0;
     for(var d=0; d<weeks*7; d++){
       var dow=d%7, slots=layout.map(function(s){return s.slice();});
       if(dd.indexOf(dow)>-1){
@@ -177,15 +217,17 @@
       slots.forEach(function(s){
         var target=targetKcal*s[2]/totalShare;
         var p=pick(s[0],target,state.plan,state.goal,lastUsed,d,used);
-        if(!p) return;
+        if(!p){ missing++; return; }
         used.push(p.r.id); lastUsed[p.r.id]=d;
-        meals.push({slot:s[1],r:p.r,mu:p.mu});
+        meals.push({slot:s[1],r:p.r,mu:p.mu,t:Math.round(target)});
       });
       days.push({i:d,meals:meals});
     }
-    program={weeks:weeks,days:days,kcal:state.progKcal,plan:state.plan,label:state.progLabel};
-    curWeek=0; render();
-    try{ localStorage.setItem('fitkal-program',JSON.stringify({weeks:weeks,kcal:state.progKcal,plan:state.plan,label:state.progLabel,days:days.map(function(x){return x.meals.map(function(m){return [m.slot,m.r.id,m.mu];});})})); }catch(e){}
+    program={weeks:weeks,days:days,kcal:state.progKcal,plan:state.plan,label:state.progLabel,diets:dietKeys.slice(),missing:missing};
+    curWeek=0; showGrocery=false; render(); saveProgram();
+  }
+  function saveProgram(){
+    try{ localStorage.setItem('fitkal-program',JSON.stringify({weeks:program.weeks,kcal:program.kcal,plan:program.plan,label:program.label,diets:program.diets,missing:program.missing,days:program.days.map(function(x){return x.meals.map(function(m){return [m.slot,m.r.id,m.mu,m.t||Math.round(m.r.kcal*m.mu)];});})})); }catch(e){}
   }
 
   function porsiyonTxt(mu){ return mu===1?'1 porsiyon':fmt(mu,2).replace(/,?0+$/,'')+' porsiyon'; }
@@ -209,21 +251,71 @@
     html+='<div class="days">';
     program.days.slice(curWeek*7,curWeek*7+7).forEach(function(day){
       var t=dayStats(day), rows='';
-      day.meals.forEach(function(m){
-        rows+='<div class="meal"><span class="slot">'+m.slot+'</span><span class="mthumb">'+window.FitKalArt.svg(m.r)+'</span><span><a href="tarifler.html#'+m.r.id+'">'+m.r.title+'</a><span class="por">'+porsiyonTxt(m.mu)+' · porsiyon '+fmt(m.r.kcal)+' kcal'+(m.r.sugar>0?' · şeker '+fmt(m.r.sugar*m.mu)+' g':'')+'</span></span><span class="k">'+fmt(m.r.kcal*m.mu)+'</span></div>';
+      day.meals.forEach(function(m,mi){
+        rows+='<div class="meal"><span class="slot">'+m.slot+'<button type="button" class="swap" data-d="'+day.i+'" data-m="'+mi+'" title="Bu öğünü değiştir" aria-label="'+m.slot+' öğününü değiştir">↻</button></span><span class="mthumb">'+window.FitKalArt.svg(m.r)+'</span><span><a href="tarifler.html#'+m.r.id+'">'+m.r.title+'</a><span class="por">'+porsiyonTxt(m.mu)+' · porsiyon '+fmt(m.r.kcal)+' kcal'+(m.r.sugar>0?' · şeker '+fmt(m.r.sugar*m.mu)+' g':'')+'</span></span><span class="k">'+fmt(m.r.kcal*m.mu)+'</span></div>';
       });
       var diffPct=Math.round((t.k-program.kcal)/program.kcal*100);
       html+='<article class="day" style="--wk:'+wkColor(curWeek)+'"><div class="day-head"><h3>'+(program.weeks>1?(curWeek+1)+'. hafta · ':'')+DAYNAMES[day.i%7]+'</h3><span>'+fmt(t.k)+' / '+fmt(program.kcal)+' kcal</span></div>'+rows+
         '<div class="day-foot"><span>P <b>'+fmt(t.p)+' g</b></span><span>K <b>'+fmt(t.c)+' g</b></span><span>Y <b>'+fmt(t.f)+' g</b></span><span>Şeker <b>'+fmt(t.s)+' g</b></span><span>Hedeften <b>'+(diffPct>0?'+':'')+diffPct+'%</b></span></div></article>';
     });
     var label=program.weeks===1?'Haftalık':program.weeks===4?'Aylık':program.weeks+' haftalık';
-    html+='</div><div class="prog-actions"><button class="btn btn-primary" type="button" id="pdfBtn">'+label+' programı PDF indir</button><button class="btn btn-ghost" type="button" id="regen">Yeniden oluştur</button><a class="btn btn-ghost" href="tarifler.html">Tüm tarifler</a></div>'+
+    html+='</div><div class="prog-actions"><button class="btn btn-primary" type="button" id="pdfBtn">'+label+' programı PDF indir</button><button class="btn btn-ghost" type="button" id="groBtn" aria-expanded="'+showGrocery+'">'+(showGrocery?'Alışveriş listesini gizle':(program.weeks>1?(curWeek+1)+'. hafta ':'')+'Alışveriş listesi')+'</button><button class="btn btn-ghost" type="button" id="regen">Yeniden oluştur</button><a class="btn btn-ghost" href="tarifler.html">Tüm tarifler</a></div>'+
+      (program.missing?'<p class="note warn-note">Seçtiğin beslenme tercihlerine uyan tarif bulunamadığı için '+program.missing+' öğün boş bırakıldı. Tercihleri azaltmayı ya da öğün düzenini değiştirmeyi dene.</p>':'')+
+      (showGrocery?groceryHtml():'')+
       '<p class="note" style="margin-top:12px">PDF, programın tamamını ('+program.weeks+' hafta) içerir. Kaloriler porsiyon başına yaklaşık değerlerdir; porsiyonlar günlük hedefe yaklaşmak için ayarlanmıştır.</p>';
     out.innerHTML=html;
     out.querySelectorAll('.weeks button').forEach(function(b){b.addEventListener('click',function(){curWeek=+b.dataset.w;render();});});
+    out.querySelectorAll('.swap').forEach(function(b){b.addEventListener('click',function(){ swapMeal(+b.dataset.d,+b.dataset.m); });});
+    $('groBtn').addEventListener('click',function(){ showGrocery=!showGrocery; render(); if(showGrocery) $('grocery').scrollIntoView({behavior:'smooth',block:'start'}); });
+    if(showGrocery) bindGrocery();
     $('regen').addEventListener('click',safeGenerate);
     $('pdfBtn').addEventListener('click',downloadPdf);
   }
+
+  function swapMeal(di,mi){
+    var day=program.days[di], m=day.meals[mi]; if(!m) return;
+    var near={}; program.days.forEach(function(d2){ if(Math.abs(d2.i-di)<=3) d2.meals.forEach(function(x){ near[x.r.id]=1; }); });
+    var excl=Object.keys(near); excl.push(m.r.id);
+    var cat=m.r.category, target=m.t||m.r.kcal*m.mu;
+    var p=pick(cat,target,program.plan,state.goal,{},di,excl)||pick(cat,target,program.plan,state.goal,{},di,day.meals.map(function(x){return x.r.id;}));
+    if(!p) return;
+    day.meals[mi]={slot:m.slot,r:p.r,mu:p.mu,t:target};
+    render(); saveProgram();
+    var el=document.querySelector('.swap[data-d="'+di+'"][data-m="'+mi+'"]'); if(el){ el.closest('.meal').classList.add('swapped'); el.focus(); }
+  }
+
+  function weekGrocery(w){
+    var items=[]; program.days.slice(w*7,w*7+7).forEach(function(d){ d.meals.forEach(function(m){ items.push({r:m.r,factor:m.mu/(m.r.servings||1)}); }); });
+    return F.grocery(items);
+  }
+  function groKey(){ return 'fitkal-grocery-'+curWeek+'-'+program.days.slice(curWeek*7,curWeek*7+7).map(function(d){return d.meals.map(function(m){return m.r.id;}).join('.');}).join('|').length+'-'+(program.days[curWeek*7]&&program.days[curWeek*7].meals[0]?program.days[curWeek*7].meals[0].r.id:''); }
+  function groceryHtml(){
+    var g=weekGrocery(curWeek), checked={};
+    try{ checked=JSON.parse(localStorage.getItem(groKey())||'{}'); }catch(e){}
+    var h='<section class="grocery" id="grocery" aria-label="Alışveriş listesi"><div class="gro-head"><h3>'+(program.weeks>1?(curWeek+1)+'. hafta ':'')+'alışveriş listesi</h3><div class="gro-actions"><button type="button" class="btn btn-ghost btn-sm" id="groCopy">Listeyi kopyala</button></div></div>'+
+      '<p class="note">Programdaki porsiyonlara göre toplandı. Evde olanları işaretleyerek eleyebilirsin. Miktarlar yaklaşıktır; tuz ve baharatlar miktarsız listelenir.</p><div class="gro-cols">';
+    F.CAT_ORDER.forEach(function(c){
+      if(!g[c]||!g[c].length) return;
+      h+='<div class="gro-cat"><h4>'+c+'</h4><ul>'+g[c].map(function(e){ var line=F.groceryLine(e), k=e.name+'|'+e.unit; return '<li><label><input type="checkbox" data-k="'+k.replace(/"/g,'')+'"'+(checked[k]?' checked':'')+'> <span>'+line+'</span></label></li>'; }).join('')+'</ul></div>';
+    });
+    return h+'</div></section>';
+  }
+  function bindGrocery(){
+    var box=$('grocery');
+    box.querySelectorAll('input[type=checkbox]').forEach(function(i){ i.addEventListener('change',function(){
+      var c={}; box.querySelectorAll('input:checked').forEach(function(x){ c[x.dataset.k]=1; });
+      try{ localStorage.setItem(groKey(),JSON.stringify(c)); }catch(e){}
+    });});
+    $('groCopy').addEventListener('click',function(){
+      var txt=[].slice.call(box.querySelectorAll('.gro-cat')).map(function(cat){
+        return cat.querySelector('h4').textContent+'\n'+[].slice.call(cat.querySelectorAll('li')).filter(function(li){return !li.querySelector('input').checked;}).map(function(li){return '- '+li.textContent.trim();}).join('\n');
+      }).join('\n\n');
+      var b=this, ok=function(){ b.textContent='Kopyalandı'; setTimeout(function(){ b.textContent='Listeyi kopyala'; },1800); };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok,function(){ fallbackCopy(txt); ok(); });
+      else { fallbackCopy(txt); ok(); }
+    });
+  }
+  function fallbackCopy(t){ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); }
 
   function alertBox(msg){ var n=document.querySelector('#progOut .note'); if(n) n.textContent=msg; }
 
@@ -298,8 +390,34 @@
       // footer
       doc.setFontSize(7); doc.setTextColor.apply(doc,muted);
       txt('Değerler porsiyon başına yaklaşıktır, tıbbi tavsiye değildir. · '+new Date().toLocaleDateString('tr-TR'),M,H-5);
-      txt('Sayfa '+(w+1)+' / '+program.weeks,W-M,H-5,{align:'right'});
+      // grocery page
+      doc.addPage();
+      doc.setFont('FK','bold'); doc.setFontSize(16); doc.setTextColor.apply(doc,ink); txt('Fit',M,M+6);
+      doc.setTextColor.apply(doc,leaf); txt('Kal',M+doc.getTextWidth('Fit'),M+6);
+      doc.setFillColor.apply(doc,strong); doc.roundedRect(M,M+10,W-2*M,9,2,2,'F');
+      doc.setFont('FK','bold'); doc.setFontSize(11); doc.setTextColor.apply(doc,ink); txt((w+1)+'. hafta alışveriş listesi',M+4,M+16.2);
+      var g=weekGrocery(w), gc=4, gw=(W-2*M-gap*(gc-1))/gc, top0=M+28, bottom=H-M-8, col=0, gy=top0, seq=[];
+      F.CAT_ORDER.forEach(function(c){ if(g[c]&&g[c].length){ seq.push({h:c}); g[c].forEach(function(e){ seq.push({t:F.groceryLine(e)}); }); } });
+      seq.forEach(function(it,ix){
+        var need = it.h ? 11 : 4.4;
+        if(it.h && gy!==top0 && gy+need+4.4>bottom){ col++; gy=top0; }
+        if(!it.h && gy+need>bottom){ col++; gy=top0; }
+        if(col>=gc){
+          doc.setFont('FK','normal'); doc.setFontSize(7); doc.setTextColor.apply(doc,muted);
+          txt('Liste sonraki sayfada devam ediyor.',M,H-5);
+          doc.addPage(); col=0; gy=top0;
+          doc.setFillColor.apply(doc,strong); doc.roundedRect(M,M+10,W-2*M,9,2,2,'F');
+          doc.setFont('FK','bold'); doc.setFontSize(11); doc.setTextColor.apply(doc,ink); txt((w+1)+'. hafta alışveriş listesi (devam)',M+4,M+16.2);
+        }
+        var gx=M+col*(gw+gap);
+        if(it.h){ if(gy!==top0) gy+=3; doc.setFont('FK','bold'); doc.setFontSize(9.5); doc.setTextColor.apply(doc,leaf); txt(it.h,gx,gy); gy+=5.5; }
+        else { doc.setFont('FK','normal'); doc.setFontSize(8); doc.setTextColor.apply(doc,ink); doc.setDrawColor(150,165,158); doc.rect(gx,gy-2.6,2.8,2.8); txt(doc.splitTextToSize(it.t,gw-6)[0],gx+4.5,gy); gy+=4.4; }
+      });
+      doc.setFont('FK','normal'); doc.setFontSize(7); doc.setTextColor.apply(doc,muted);
+      txt('Miktarlar programdaki porsiyonlara göre yaklaşık hesaplanmıştır.',M,H-5);
     }
+    var total=doc.getNumberOfPages();
+    for(var pg=1; pg<=total; pg++){ doc.setPage(pg); doc.setFont('FK','normal'); doc.setFontSize(7); doc.setTextColor.apply(doc,muted); txt('Sayfa '+pg+' / '+total,W-M,H-5,{align:'right'}); }
     var name='fitkal-program-'+program.weeks+'-hafta-'+program.kcal+'kcal.pdf';
     var blob=doc.output('blob'), url=URL.createObjectURL(blob), a=document.createElement('a');
     a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
@@ -317,13 +435,53 @@
   $('duration').addEventListener('change',function(){});
   $('toProgram').addEventListener('click',function(e){ e.preventDefault(); safeGenerate(); $('program').scrollIntoView({behavior:'smooth'}); });
 
+  // ---------- weight progress ----------
+  function getW(){ try{ return JSON.parse(localStorage.getItem('fitkal-weights')||'[]'); }catch(e){ return []; } }
+  function setW(a){ try{ localStorage.setItem('fitkal-weights',JSON.stringify(a)); }catch(e){} drawProgress(); }
+  $('wDate').value=todayKey();
+  $('wAdd').addEventListener('click',function(){
+    var d=$('wDate').value, v=parseFloat(String($('wVal').value).replace(',','.'));
+    if(!d||!(v>20&&v<400)){ $('wErr').textContent='Tarih ve 20–400 kg arasında bir kilo gir.'; return; }
+    $('wErr').textContent='';
+    var a=getW().filter(function(x){return x.d!==d;}); a.push({d:d,w:Math.round(v*10)/10}); a.sort(function(x,y){return x.d<y.d?-1:1;});
+    setW(a); $('wVal').value='';
+    if(d===todayKey()){ $('weight').value=Math.round(v*10)/10; calc(); }
+  });
+  function drawProgress(){
+    var a=getW(), box=$('wChart'), list=$('wList');
+    if(!a.length){ box.innerHTML='<div class="empty">Henüz kayıt yok. İlk tartı sonucunu ekleyerek başla.</div>'; list.innerHTML=''; $('wStats').innerHTML=''; return; }
+    var goalW = goalMode!=='keep' ? num('targetW') : null;
+    var vals=a.map(function(x){return x.w;}); if(goalW) vals.push(goalW);
+    var mn=Math.floor(Math.min.apply(null,vals)-1), mx=Math.ceil(Math.max.apply(null,vals)+1);
+    var W=640,H=220,pl=40,pr=14,pt=14,pb=28, n=a.length;
+    var X=function(i){return n===1?pl+(W-pl-pr)/2:pl+i*(W-pl-pr)/(n-1);}, Y=function(v){return pt+(mx-v)/(mx-mn)*(H-pt-pb);};
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Kilo değişim grafiği">';
+    var step=Math.max(1,Math.round((mx-mn)/4));
+    for(var v=mn; v<=mx; v+=step){ svg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" class="grid"/><text x="'+(pl-6)+'" y="'+(Y(v)+4)+'" class="axis" text-anchor="end">'+v+'</text>'; }
+    if(goalW){ svg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(goalW)+'" y2="'+Y(goalW)+'" class="goal"/><text x="'+(W-pr)+'" y="'+(Y(goalW)-5)+'" class="axis goalt" text-anchor="end">Hedef '+fmt(goalW,1)+' kg</text>'; }
+    var path=a.map(function(x,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(x.w).toFixed(1);}).join(' ');
+    if(n>1) svg+='<path d="'+path+' L'+X(n-1).toFixed(1)+' '+(H-pb)+' L'+X(0).toFixed(1)+' '+(H-pb)+' Z" class="area"/><path d="'+path+'" class="line"/>';
+    a.forEach(function(x,i){ svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(x.w).toFixed(1)+'" r="'+(i===n-1?5:3.5)+'" class="pt'+(i===n-1?' last':'')+'"/>'; });
+    var lab=function(i){ var p=a[i].d.split('-'); return p[2]+'.'+p[1]; };
+    svg+='<text x="'+X(0)+'" y="'+(H-8)+'" class="axis" text-anchor="'+(n===1?'middle':'start')+'">'+lab(0)+'</text>';
+    if(n>1) svg+='<text x="'+X(n-1)+'" y="'+(H-8)+'" class="axis" text-anchor="end">'+lab(n-1)+'</text>';
+    box.innerHTML=svg+'</svg>';
+    var first=a[0].w, last=a[n-1].w, ch=last-first;
+    var st='<div><span>Başlangıç</span><strong>'+fmt(first,1)+' kg</strong></div><div><span>Son ölçüm</span><strong>'+fmt(last,1)+' kg</strong></div><div><span>Değişim</span><strong>'+(ch>0?'+':ch<0?'−':'')+fmt(Math.abs(ch),1)+' kg</strong></div>';
+    if(goalW) st+='<div><span>Hedefe kalan</span><strong>'+fmt(Math.abs(last-goalW),1)+' kg</strong></div>';
+    $('wStats').innerHTML=st;
+    list.innerHTML=a.slice().reverse().map(function(x){ var p=x.d.split('-'); return '<li><span>'+p[2]+'.'+p[1]+'.'+p[0]+'</span><b>'+fmt(x.w,1)+' kg</b><button type="button" class="linkbtn" data-del="'+x.d+'" aria-label="'+p[2]+'.'+p[1]+'.'+p[0]+' kaydını sil">Sil</button></li>'; }).join('');
+    list.querySelectorAll('[data-del]').forEach(function(b){ b.addEventListener('click',function(){ setW(getW().filter(function(x){return x.d!==b.dataset.del;})); }); });
+  }
+
   calc();
+  drawProgress();
   // restore last program
   try{
     var sp=JSON.parse(localStorage.getItem('fitkal-program')||'null');
     if(sp&&sp.days){
       var byId={}; R.forEach(function(r){byId[r.id]=r;});
-      program={weeks:sp.weeks,kcal:sp.kcal,plan:sp.plan,label:sp.label,days:sp.days.map(function(ms,i){return {i:i,meals:ms.filter(function(m){return byId[m[1]];}).map(function(m){return {slot:m[0],r:byId[m[1]],mu:m[2]};})};})};
+      program={weeks:sp.weeks,kcal:sp.kcal,plan:sp.plan,label:sp.label,diets:sp.diets||[],missing:sp.missing||0,days:sp.days.map(function(ms,i){return {i:i,meals:ms.filter(function(m){return byId[m[1]];}).map(function(m){return {slot:m[0],r:byId[m[1]],mu:m[2],t:m[3]};})};})};
       render();
     }
   }catch(e){}

@@ -296,3 +296,88 @@ dialog.recipe::backdrop{background:rgba(10,20,16,.55)}
 .rd-stats{grid-template-columns:repeat(5,1fr)}
 .rmac .sug{color:var(--beet)}
 @media (max-width:620px){.rd-stats{grid-template-columns:repeat(3,1fr)}}
+
+/* v4 */
+.tool.wide{grid-column:1/-1}
+.ex-row{grid-template-columns:2fr 1fr}
+@media (max-width:640px){.tool.wide{grid-column:auto}}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.check input{accent-color:var(--leaf)}
+.check input:disabled+*,.check:has(input:disabled){opacity:.7}
+.glasses i{transition:background .2s,opacity .2s}
+.glasses i.drunk{background:var(--leaf);opacity:1}
+.wtrack{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px}
+.wtrack .num{font-size:16px;min-width:58px;text-align:center}
+.icon-btn.sm{width:32px;height:32px;font:700 18px var(--body);line-height:1}
+.diets-field{flex-basis:100%}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}
+.dchip{position:relative;cursor:pointer}
+.dchip input{position:absolute;opacity:0;width:1px;height:1px}
+.dchip span{display:inline-block;font:600 14px var(--body);padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.dchip input:checked+span{background:var(--leaf);border-color:var(--leaf);color:var(--leaf-ink)}
+.dchip input:focus-visible+span{outline:3px solid var(--turmeric);outline-offset:2px}
+.meal .slot{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.swap{border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;font-size:13px;line-height:1;padding:3px 7px;cursor:pointer}
+.swap:hover{color:var(--leaf);border-color:var(--leaf)}
+.meal.swapped{animation:flash 1s ease}
+@keyframes flash{0%{background:color-mix(in srgb,var(--turmeric) 35%,transparent)}100%{background:transparent}}
+.warn-note{color:var(--bad);font-weight:600}
+.grocery{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px}
+.gro-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.gro-head h3{font-size:22px}
+.gro-cols{columns:3 240px;column-gap:24px;margin-top:12px}
+.gro-cat{break-inside:avoid;margin-bottom:16px}
+.gro-cat h4{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--leaf)}
+.gro-cat ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.gro-cat label{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.gro-cat input{margin-top:3px;accent-color:var(--leaf)}
+.gro-cat input:checked+span{text-decoration:line-through;color:var(--muted)}
+.progress{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+.p-form,.p-chart{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px}
+.p-form{display:grid;gap:12px}
+.p-form label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.p-form .g-field{display:grid;gap:6px}
+.p-form input{font:500 15px var(--body);padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.err{color:var(--bad);font-size:13px;min-height:1em}
+.wlist{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:220px;overflow:auto}
+.wlist li{display:grid;grid-template-columns:1fr auto auto;gap:10px;font-size:14px;padding:6px 0;border-top:1px dashed var(--line)}
+.wlist b{font-family:var(--mono)}
+.linkbtn{background:none;border:0;color:var(--bad);font:600 13px var(--body);cursor:pointer;padding:0}
+.wstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.wstats div{background:var(--surface-2);border-radius:10px;padding:10px}
+.wstats span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.wstats strong{font-family:var(--mono);font-size:18px}
+.chart svg{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{fill:var(--muted);font:11px var(--mono)}
+.chart .goal{stroke:var(--turmeric);stroke-width:2;stroke-dasharray:6 5}
+.chart .goalt{fill:var(--warn)}
+.chart .line{fill:none;stroke:var(--leaf);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .area{fill:var(--leaf);opacity:.12}
+.chart .pt{fill:var(--surface);stroke:var(--leaf);stroke-width:2}
+.chart .pt.last{fill:var(--leaf)}
+@media (max-width:860px){.progress{grid-template-columns:1fr}}
+@media print{#ilerleme{display:none!important}}
+.filters .dchips{flex-basis:100%}
+.filters .dchip span{padding:5px 11px;font-size:13px;background:var(--surface)}
+.rd-tools{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-block:1px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:10px;font-size:14px}
+.stepper b{font-family:var(--mono)}
+.rd-acts{display:flex;flex-wrap:wrap;gap:6px}
+@media print{
+  body.printing-recipe main, body.printing-recipe header.top{display:none!important}
+  dialog.recipe[open]{position:static;max-height:none;width:100%;max-width:none;box-shadow:none;border:0}
+  dialog.recipe::backdrop{background:none}
+  .rd-tools,.rd .close{display:none!important}
+}
+.crumbs{font-size:13px;color:var(--muted);padding-block:18px 8px}
+.crumbs a{color:var(--leaf);text-decoration:none}
+.rp{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:0 26px 26px;display:grid;gap:16px;overflow:hidden}
+.rp-art{margin:0 -26px;aspect-ratio:16/6;overflow:hidden;max-width:none}
+.rp-art svg{width:100%;height:100%;display:block}
+.rp h1{font-size:clamp(32px,5vw,52px);font-weight:800}
+.rp .lede{color:var(--muted);font-size:18px;margin:8px 0 10px}
+.rp .h4{margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:var(--body)}
+.rp ul,.rp ol{margin:0;padding-left:20px;display:grid;gap:6px}
+a.rcard{text-decoration:none}
+@media print{.recipe-page .related,.crumbs,.rd-tools{display:none!important}.rp{border:0}}

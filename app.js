@@ -221,7 +221,7 @@
       '<p class="note" style="margin-top:12px">PDF, programın tamamını ('+program.weeks+' hafta) içerir. Kaloriler porsiyon başına yaklaşık değerlerdir; porsiyonlar günlük hedefe yaklaşmak için ayarlanmıştır.</p>';
     out.innerHTML=html;
     out.querySelectorAll('.weeks button').forEach(function(b){b.addEventListener('click',function(){curWeek=+b.dataset.w;render();});});
-    $('regen').addEventListener('click',generate);
+    $('regen').addEventListener('click',safeGenerate);
     $('pdfBtn').addEventListener('click',downloadPdf);
   }
 
@@ -306,9 +306,16 @@
     setTimeout(function(){URL.revokeObjectURL(url);},4000);
   }
 
-  $('genBtn').addEventListener('click',generate);
+  function safeGenerate(){
+    try{ generate(); }
+    catch(e){
+      if(window.console) console.error(e);
+      $('progOut').innerHTML='<div class="empty" style="margin-top:18px">Program oluşturulamadı. Sayfayı <b>Cmd + Shift + R</b> ile yenileyip tekrar dene.</div>';
+    }
+  }
+  $('genBtn').addEventListener('click',safeGenerate);
   $('duration').addEventListener('change',function(){});
-  $('toProgram').addEventListener('click',function(e){ e.preventDefault(); generate(); $('program').scrollIntoView({behavior:'smooth'}); });
+  $('toProgram').addEventListener('click',function(e){ e.preventDefault(); safeGenerate(); $('program').scrollIntoView({behavior:'smooth'}); });
 
   calc();
   // restore last program
